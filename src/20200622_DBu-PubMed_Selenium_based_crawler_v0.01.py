@@ -257,6 +257,107 @@ all_search_data["keyterm"] = keyterm
 all_search_data["PMID"] = Main_PMID
 all_search_data.to_excel(dt+"DBu_All_keywords_search_PMIDs.xlsx")
 # =============================================================================
+# Just so as not to loose data of the PMIDs, exporting the data as  chunks to excel sheet
+# =============================================================================
+n = 1000000
+list_of_chunks = [all_search_interim[p:p+n] for p in range(0, all_search_interim.shape[0],n)]
+str(list_of_chunks)
+
+writer1 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part1', engine = 'xlsxwriter')
+writer2 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part2', engine = 'xlsxwriter')
+writer3 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part3', engine = 'xlsxwriter')
+writer4 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part4', engine = 'xlsxwriter')
+writer5 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part5', engine = 'xlsxwriter')
+writer6 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part6', engine = 'xlsxwriter')
+writer7 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part7', engine = 'xlsxwriter')
+writer8 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part8', engine = 'xlsxwriter')
+writer9 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part9', engine = 'xlsxwriter')
+writer10 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part10', engine = 'xlsxwriter')
+writer11 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part11', engine = 'xlsxwriter')
+
+for chunk in range(len(list_of_chunks)):
+    value = chunk + 1
+    print(value)
+    data = list_of_chunks[chunk]
+    if (value <= 10):
+        # writer1 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part1', engine = 'xlsxwriter')
+        data.to_excel(writer1, sheet_name = 'Sheet'+str(value))
+        # writer1.save()
+        print("1 crore transacting")
+    elif (10 < value <= 20):
+        print("1 crore transactions complete")        
+        writer1.save()
+        # writer2 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part2', engine = 'xlsxwriter')
+        data.to_excel(writer2, sheet_name = 'Sheet'+str(value))
+        # writer2.save()
+        print("2 crore transacting")
+    elif (20 < value <= 30):
+        print("2 crore transactions complete")
+        writer2.save()
+        # writer3 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part3', engine = 'xlsxwriter')
+        data.to_excel(writer3, sheet_name = 'Sheet'+str(value))
+        # writer3.save()
+        print("3 crore transacting")
+    elif (30 < value <= 40):
+        print("3 crore transactions complete")  
+        writer3.save()
+        # writer4 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part4', engine = 'xlsxwriter')
+        data.to_excel(writer4, sheet_name = 'Sheet'+str(value))
+        # writer4.save()
+        print("4 crore transacting")
+    elif (40 < value <= 50):
+        print("4 crore transactions complete")
+        writer4.save()
+        # writer5 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part5', engine = 'xlsxwriter')
+        data.to_excel(writer5, sheet_name = 'Sheet'+str(value))
+        # writer5.save()
+        print("5 crore transacting")
+    elif (50 < value <= 60):
+        print("5 crore transactions complete")
+        writer5.save()
+        # writer6 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part6', engine = 'xlsxwriter')
+        data.to_excel(writer6, sheet_name = 'Sheet'+str(value))
+        # writer6.save()
+        print("6 crore transacting")
+    elif (60 < value <= 70):
+        print("6 crore transactions complete")
+        writer6.save()
+        # writer7 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part7', engine = 'xlsxwriter')
+        data.to_excel(writer7, sheet_name = 'Sheet'+str(value))
+        # writer7.save()
+        print("7 crore transacting")
+    elif (70 < value <= 80):
+        print("7 crore transactions complete")
+        writer7.save()
+        # writer8 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part8', engine = 'xlsxwriter')
+        data.to_excel(writer8, sheet_name = 'Sheet'+str(value))
+        # writer8.save()
+        print("8 crore transacting")
+    elif (80 < value <= 90):
+        print("8 crore transactions complete")
+        writer8.save()
+        # writer9 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part9', engine = 'xlsxwriter')
+        data.to_excel(writer9, sheet_name = 'Sheet'+str(value))
+        # writer9.save()
+        print("9 crore transacting")
+    elif (90 < value <= 100):
+        print("9 crore transactions complete")
+        writer9.save()
+        # writer10 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part10', engine = 'xlsxwriter')
+        data.to_excel(writer10, sheet_name = 'Sheet'+str(value))
+        # writer10.save()
+        print("10 crore transacting")
+    elif (100 < value <= 110):
+        print("10 crore transactions complete")
+        writer10.save()
+        # writer11 = pd.ExcelWriter('chunkwise_export_of_PMIDs_part11', engine = 'xlsxwriter')
+        data.to_excel(writer11, sheet_name = 'Sheet'+str(value))
+        # writer11.save()
+        print("11th crore transactions going")
+    else:
+        pass
+writer11.save()
+# =============================================================================
 # Creating a unique list of PMIDs
 # =============================================================================
 # all_unique_pmids = []
