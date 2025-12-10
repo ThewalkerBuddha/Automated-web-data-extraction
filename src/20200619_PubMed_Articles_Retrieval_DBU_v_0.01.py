@@ -8,7 +8,6 @@ Created on Fri Jun 19 16:16:31 2020
 
 import pandas as pd
 import numpy as np
-import Biopython as Bio
 from Bio import Entrez
 import time
 time.sleep(3)
@@ -26,24 +25,30 @@ def search(query):
 def fetch_details(id_list):
     ids = ','.join(id_list)
     Entrez.email = "divakarbuddha.pharmacy@gmail.com"
-    handle = Entrez.efetch(db="pubmed", retmode = "xml", id = ids)
+    handle = Entrez.efetch(db="pubmed", retmode = "json", id = ids)
     results2 = Entrez.read(handle)
     return results2
 # =============================================================================
 # All in one code to search pubmed and fetch the records
 # =============================================================================
 if __name__ == '__main__':
-    time.sleep(1)
+    # time.sleep(1)
     results = search("chronic pain advanced treatment options today")
-    time.sleep(0.5)
+    # time.sleep(0.5)
     id_list = results["IdList"]
-    time.sleep(1)
     papers = fetch_details(id_list)
-    for i, paper in enumerate(papers):
-        print (i+1, paper)
+    # for each in papers:
+    #     print(each)
+    # for i, paper in enumerate(papers):
+    #     print(i)
+    #     print (i+1, paper)
+# results9 = search("QSPainRelief")
+# print(len(results9["Count"]))        
+# print(results9["IdList"])       
+        # print("%d) %s" % (i+1, paper["MedLineCitation"]["Article"]["ArticleTitle"]))
         
-        
-        print("%d) %s" % (i+1, paper["MedLineCitation"]["Article"]["ArticleTitle"]))
-        
-    import json
-    print(json.dumps(papers[0], indent =2, separators=(',', ':')))
+    # import json
+    # print(json.dumps(papers[0], indent =2, separators=(',', ':')))
+    
+    
+    # reference: https://marcobonzanini.com/2015/01/12/searching-pubmed-with-python/
