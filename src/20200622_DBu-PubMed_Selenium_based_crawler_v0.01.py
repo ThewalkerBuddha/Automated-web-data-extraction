@@ -98,6 +98,29 @@ My_options.add_argument("headless")#to load pages faster without opening every p
 My_options.add_experimental_option('excludeSwitches', ['enable-logging'])#disabling the Devtools listening message
 
 # =============================================================================
+# Function to create a filename to be created for each drug + param search
+# =============================================================================
+def individual_filename(each_1, search_results):
+    drg = (each_1.split("AND")[0]).replace('"','')
+    Kon_list = list(range(0, search_results, 5))
+    Koff_list = list(range(1, search_results, 5))
+    KD_list = list(range(2, search_results, 5))
+    MRT_list = list(range(3, search_results, 5))
+    TMDD_list = list(range(4, search_results, 5))
+    if (All_search_terms.index(each_1) in Kon_list):
+        param = "Kon"
+    elif (All_search_terms.index(each_1) in Koff_list):
+        param = "Koff"
+    elif (All_search_terms.index(each_1) in KD_list):
+        param = "KD"
+    elif (All_search_terms.index(each_1) in Kon_list):
+        param = "MRT"
+    else:
+        param = "TMDD"
+    filename = drg+"_ "+param
+    return filename
+
+# =============================================================================
 # Loading keywords to be entered into the pubmed search tab
 # =============================================================================
 Search_strategy = pd.read_excel("D:/WFH/01 QSPainRelief/01 Literature Screening/01 Systematic Search/20200623_Literature_search_strategy_DBu_v_0.04.xlsx")
@@ -136,7 +159,7 @@ password.send_keys("D124333r@#")
 # keep_logged = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[3]/label').click()
 submit = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[4]/input[2]').click()
 WebDriverWait(buddy, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="id_term"]')))
-search_bar = buddy.find_element_by_xpath('//*[@id="id_term"]')
+# search_bar = buddy.find_element_by_xpath('//*[@id="id_term"]')
 
 # =============================================================================
 # Iterating the program over multiple key_word combinations
@@ -145,14 +168,22 @@ keyterm = []
 Main_PMID = []
 
 for each_1 in All_search_terms:
-    time.sleep(randint(1,5))
-    search_bar.clear()
+    time.sleep(randint(5,10))
+    if(All_search_terms.index(each_1) != 0):
+        homepage = buddy.find_element_by_xpath('//*[@id="search-form"]/div[1]/a[1]')
+        homepage.click()
+    else:
+        ""
+    search_bar = WebDriverWait(buddy, 10).until(EC.element_to_be_clickable((By.XPATH,'//*[@id="id_term"]')))
+    search_bar.click()
     search_term = (each_1)
     search_bar.send_keys(search_term)
-    Search = buddy.find_element_by_xpath('//*[@id="search-form"]/div[1]/div[1]/div/button/span').click()
+    Search = WebDriverWait(buddy, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="search-form"]/div[1]/div[1]/div/button/span')))
+    Search.click()
     # Getting numb
     nr_results = buddy.find_element_by_xpath('//*[@class="value"]').text
     search_results = int(nr_results.replace(",",""))
+    search_res1 = search_results+1
     number_of_pages = search_results/200
     pg_roundoff = math.ceil(number_of_pages)
     iterations = pg_roundoff + 1
@@ -173,16 +204,22 @@ for each_1 in All_search_terms:
         to_be_parsed_link = new_link+"&size=200&page="+page_number
         # buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
         buddy.get(to_be_parsed_link)
-        All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
-        list_4_IDs = []
-        for each_id in All_IDs:
-            id_value = each_id.get_attribute("content")
-            list_4_IDs.append(id_value)
-        for every_id in list_4_IDs:
-            final_list = every_id.split(",")
-        # Page_wise_PMIDs.append(final_list)
-        # All_PMIDs.pop(19)
-        All_PMIDs.append(final_list)
+        try:
+            No_results = buddy.find_element_by_xpath('//*[@id="search-results"]/div[1]/div[1]').text
+            if (No_results == 'No results were found.'):
+                break
+            else:
+                a
+                All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
+                list_4_IDs = []
+                for each_id in All_IDs:
+                    id_value = each_id.get_attribute("content")
+                    list_4_IDs.append(id_value)
+                for every_id in list_4_IDs:
+                    final_list = every_id.split(",")
+                # Page_wise_PMIDs.append(final_list)
+                # All_PMIDs.pop(19)
+                All_PMIDs.append(final_list)
         # All2 = []
         # All2.append(id_value)
         # All_2 = All_PMIDs.append(id_value)
@@ -192,54 +229,16 @@ for each_1 in All_search_terms:
         for k in j:
             ff.append(k)
     
-    
+    filename = individual_filename(each_1, search_results)
+# =============================================================================
+#     Trial to get the information of keyword in the filename
+# =============================================================================
     Search_word = [search_term]*len(ff)
     
     Search_dataframe = pd.DataFrame()
     Search_dataframe["Search_term"] = Search_word
-    Search_dataframe["PMIDs"] = ff
-    
-    str(Search_dataframe)
-    if (item in search_term for item in terms[0]):
-        4_name = "Kon"
-    elif (item in search_term for item in terms[1]):
-        4_name = "Koff"
-    elif (item in search_term for item in terms[2]):
-        4_name = "MRT"
-    elif (item in search_term for item in terms[3]):
-        4_name = "TMDD"
-    print(4_name)
-# =============================================================================
-#     trial for iterations for search_term
-# =============================================================================
-    for j in All_search_terms:
-        if (item in search_term for item in terms[0]):
-            k_name = "Kon"
-        elif (item in search_term for item in terms[1]):
-            k_name = "Koff"
-        elif (item in search_term for item in terms[2]):
-            k_name = "MRT"
-        elif (item in search_term for item in terms[3]):
-            k_name = "TMDD"
-        print(k_name)
-terms[0]
-for j in All_search_terms:
-    if ('"Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants"' in terms[0]):
-        k_name = "Kon"
-    if ('"Equilibrium dissociation rate constant" OR "KD" OR "affinity" OR "binding affinity" OR "Koff/Kon"' in terms[1]):
-        k_name = "Koff"
-    if ('"Target residence time" OR "1/Koff" OR "mean residence time" OR "MRT"' in terms[2]):
-        k_name = "KD"
-    if ('"Target Mediated Drug Disposition" OR "Target-Mediated Drug Disposition" OR "target mediated drug disposition" OR "TMDD"' in terms[3]):
-        k_name = "TMDD"
-    print(j)
-    print(k_name)
-# =============================================================================
-#     
-# =============================================================================
-    
-    
-    Search_dataframe.to_excel(dt+"individual_"+"_Search.xlsx")
+    Search_dataframe["PMIDs"] = ff 
+    Search_dataframe.to_excel(dt+"_"+filename+"_Search.xlsx")
 
     keyterm.extend(p for p in Search_word)
     Main_PMID.extend(q for q in ff)
