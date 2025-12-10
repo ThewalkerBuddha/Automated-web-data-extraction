@@ -43,8 +43,7 @@ import math
 
 from os import getcwd, chdir
 import os
-os.chdir("D:/WFH/01 QSPainRelief/01 Literature Screening/01 Systematic Search")
-
+os.chdir("E:/Divakar/WFH/01 QSPainRelief/DBu02/01 Literature Screening/01 Systematic Search")
 
 # =============================================================================
 # Functions to check if multiple conditions have been satisfied
@@ -123,7 +122,7 @@ def individual_filename(each_1, search_results):
 # =============================================================================
 # Loading keywords to be entered into the pubmed search tab
 # =============================================================================
-Search_strategy = pd.read_excel("D:/WFH/01 QSPainRelief/01 Literature Screening/01 Systematic Search/20200623_Literature_search_strategy_DBu_v_0.04.xlsx")
+Search_strategy = pd.read_excel("E:/Divakar/WFH/01 QSPainRelief/DBu02/01 Literature Screening/01 Systematic Search/20220412_Literature_search_strategy_DBu_v_0.05.xlsx")
 Search_strategy
 
 terms = [x for x in Search_strategy["Search terms"] if str(x) !='nan']
@@ -132,9 +131,11 @@ short_term = [z for z in Search_strategy["Short term"] if str(z != 'nan')]
 
 All_search_terms = []
 # Creating all possible keyword to search for each drug i.e. 109 drugs X 5 key terms for search
-for m in drugs:
-    for n in terms:
-        p = m+ " AND "+n
+for drg in drugs[107]:
+    dg = drg
+    print(dg)
+    for trm in terms:
+        p = drg+ " AND "+trm
         All_search_terms.append(p)
 All_search_terms
 
@@ -150,7 +151,7 @@ buddy.get("https://pubmed.ncbi.nlm.nih.gov/")
 time.sleep(randint(1,5))
 buddy.find_element_by_xpath('//*[@id="account_login"]').click()
 time.sleep(randint(2,7))
-buddy.find_element_by_xpath('//*[@id="auth-options"]/div/div/a[4]').click()
+buddy.find_element_by_xpath('//*[@id="auth-options"]/div/div/a[8]').click()
 condition1 = EC.element_to_be_clickable((By.XPATH, '//*[@id="id_username"]'))
 condition2 = EC.element_to_be_clickable((By.XPATH, '//*[@id="id_password"]'))
 WebDriverWait(buddy, 10).until(all_of_the_conditions_fulfilled(condition1, condition2))
@@ -160,6 +161,8 @@ username.send_keys("divakarbuddha")
 password.send_keys("D124333r@#")
 # keep_logged = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[3]/label').click()
 submit = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[4]/input[2]').click()
+time.sleep(randint(3,6))
+buddy.find_element_by_xpath('//*[@id="opt-out-close"]/span').click()
 # WebDriverWait(buddy, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="id_term"]')))
 # search_bar = buddy.find_element_by_xpath('//*[@id="id_term"]')
 
@@ -184,8 +187,13 @@ for each_1 in All_search_terms:
     Search.click()
     # Getting numb
     try:
-        No_results = buddy.find_element_by_xpath('//*[@id="search-results"]/div[1]/div[1]')
-        if (No_results.text == 'No results were found.'):
+        last_page = buddy.find_element_by_xpath('//*[@id="search-results"]/section/div[1]/div/div[2]/div/h3')
+        No_results = buddy.find_element_by_xpath('//*[@id="search-results"]/div[2]/div[1]/div[1]')
+        if (last_page.text == '//*[@id="search-results"]/section/div[1]/div/div[2]/div/h3'):
+            keyterm = [each_1]
+            Main_PMID = ["results for this keyterm complete"]
+            break
+        elif (No_results.text == 'No results were found.'):
             keyterm = [each_1]
             Main_PMID = [""]
             break
@@ -214,7 +222,7 @@ for each_1 in All_search_terms:
                     to_be_parsed_link = new_link+"&size=200&page="+page_number
                     # buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
                     buddy.get(to_be_parsed_link)
-                    All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
+                    All_IDs = buddy.find_elements_by_xpath('/html/head/meta[29]')
                     list_4_IDs = []
                     for each_id in All_IDs:
                         id_value = each_id.get_attribute("content")
