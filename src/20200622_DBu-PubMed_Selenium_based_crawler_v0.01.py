@@ -39,6 +39,51 @@ import progressbar as Status
 from progressbar import AnimatedMarker
 from progressbar import Timer
 import math
+
+
+from os import getcwd, chdir
+import os
+os.chdir("D:/WFH/01 QSPainRelief/01 Literature Screening/01 Systematic Search")
+
+
+# =============================================================================
+# Functions to check if multiple conditions have been satisfied
+# =============================================================================
+def any_of_the_conditions_fulfilled(*expected_conditions):
+    def any_of_conditions(driver):
+        for each_any in expected_conditions:
+            try:
+                outcome_any = each_any(driver)
+                if outcome_any:
+                    return outcome_any
+            except WebDriverException:
+                pass
+        return False
+    return any_of_conditions
+def all_of_the_conditions_fulfilled(*expected_conditions):
+    def all_of_conditions(driver):
+        results = []
+        for each_all in expected_conditions:
+            try:
+                outcome_all = each_all(driver)
+                if not outcome_all:
+                    return False
+                results.append(outcome_all)
+            except WebDriverException:
+                return False
+        return results
+    return all_of_conditions
+def None_of_the_conditions_fulfilled(*expected_conditions):
+    def None_of_conditions(driver):
+        for each_none in expected_conditions:
+            try:
+                outcome_none = each_none(driver)
+                if outcome_none:
+                    return False
+            except WebDriverException:
+                pass
+        return True
+    return None_of_conditions
 # =============================================================================
 # Selenium Driver settings for smooth crawling
 # =============================================================================
@@ -51,256 +96,332 @@ prefs = ({"profile.managed_default_content_settings.images": 2, "disk-cache-size
 My_options.add_experimental_option("prefs", prefs)
 My_options.add_argument("headless")#to load pages faster without opening every pafe in new windo
 My_options.add_experimental_option('excludeSwitches', ['enable-logging'])#disabling the Devtools listening message
-# =============================================================================
-# Defining functions to test multiple conditions
-# =============================================================================
-# def any_of_the_conditions_fulfilled(*expected_conditions):
-#     def any_of_conditions(driver):
-#         for each_any in expected_conditions:
-#             try:
-#                 outcome_any = each_any(driver)
-#                 if outcome_any:
-#                     return outcome_any
-#             except WebDriverException:
-#                 pass
-#         return False
-#     return any_of_conditions
-# def all_of_the_conditions_fulfilled(*expected_conditions):
-#     def all_of_conditions(driver):
-#         results = []
-#         for each_all in expected_conditions:
-#             try:
-#                 outcome_all = each_all(driver)
-#                 if not outcome_all:
-#                     return False
-#                 results.append(outcome_all)
-#             except WebDriverException:
-#                 return False
-#         return results
-#     return all_of_conditions
-# def None_of_the_conditions_fulfilled(*expected_conditions):
-#     def None_of_conditions(driver):
-#         for each_none in expected_conditions:
-#             try:
-#                 outcome_none = each_none(driver)
-#                 if outcome_none:
-#                     return False
-#             except WebDriverException:
-#                 pass
-#         return True
-#     return None_of_conditions
 
 # =============================================================================
 # Loading keywords to be entered into the pubmed search tab
 # =============================================================================
+Search_strategy = pd.read_excel("D:/WFH/01 QSPainRelief/01 Literature Screening/01 Systematic Search/20200623_Literature_search_strategy_DBu_v_0.04.xlsx")
+Search_strategy
 
-buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
+terms = [x for x in Search_strategy["Search terms"] if str(x) !='nan']
+drugs = [y for y in Search_strategy["Drugs"] if str(y) != 'nan']
+short_term = [z for z in Search_strategy["Short term"] if str(z != 'nan')]
+
+All_search_terms = []
+# Creating all possible keyword to search for each drug i.e. 109 drugs X 5 key terms for search
+for m in drugs:
+    for n in terms:
+        p = m+ " AND "+n
+        All_search_terms.append(p)
+from datetime import date
+current = date.today()
+dt = current.strftime('%Y%m%d')
+# =============================================================================
+# Opening the selenium, logging into pubmed account, locating the search bar
+# =============================================================================
+
+buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver") #desired_capabilities = Capacity, options = My_options)
 buddy.get("https://pubmed.ncbi.nlm.nih.gov/")
-
+time.sleep(randint(1,5))
 buddy.find_element_by_xpath('//*[@id="account_login"]').click()
+time.sleep(randint(2,7))
 buddy.find_element_by_xpath('//*[@id="auth-options"]/div/div/a[4]').click()
+condition1 = EC.element_to_be_clickable((By.XPATH, '//*[@id="id_username"]'))
+condition2 = EC.element_to_be_clickable((By.XPATH, '//*[@id="id_password"]'))
+WebDriverWait(buddy, 10).until(all_of_the_conditions_fulfilled(condition1, condition2))
 username = buddy.find_element_by_xpath('//*[@id="id_username"]')
 password = buddy.find_element_by_xpath('//*[@id="id_password"]')
 username.send_keys("divakarbuddha")
 password.send_keys("D124333r@#")
-keep_logged = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[3]/label').click()
+# keep_logged = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[3]/label').click()
 submit = buddy.find_element_by_xpath('//*[@id="ncbi-auth-form"]/div/form/div[4]/input[2]').click()
-
-
+WebDriverWait(buddy, 10).until(EC.element_to_be_clickable((By.XPATH, '//*[@id="id_term"]')))
 search_bar = buddy.find_element_by_xpath('//*[@id="id_term"]')
-search_bar.send_keys('Agomelatine AND [("Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants")]')
-Search = buddy.find_element_by_xpath('//*[@id="search-form"]/div[1]/div[1]/div/button/span').click()
 
+# =============================================================================
+# Iterating the program over multiple key_word combinations
+# =============================================================================
+keyterm = []
+Main_PMID = []
 
-# Getting numb
-nr_results = buddy.find_element_by_xpath('//*[@class="value"]').text
-search_results = int(nr_results.replace(",",""))
-number_of_pages = search_results/200
-iterations = math.ceil(number_of_pages)
-iterations
+for each_1 in All_search_terms:
+    time.sleep(randint(1,5))
+    search_bar.clear()
+    search_term = (each_1)
+    search_bar.send_keys(search_term)
+    Search = buddy.find_element_by_xpath('//*[@id="search-form"]/div[1]/div[1]/div/button/span').click()
+    # Getting numb
+    nr_results = buddy.find_element_by_xpath('//*[@class="value"]').text
+    search_results = int(nr_results.replace(",",""))
+    number_of_pages = search_results/200
+    pg_roundoff = math.ceil(number_of_pages)
+    iterations = pg_roundoff + 1
+    iterations
+    
+    updated_url = buddy.find_element_by_xpath('//meta[@property="og:url"]')
+    new_link = updated_url.get_attribute("content")
+    
+    new2 = new_link+"&size=200&page="+str(1)
+    # buddy.close()
+    
+    All_PMIDs = []
+    Page_wise_PMIDs = []
+    
+    for every_page in range(1,iterations):
+        time.sleep(randint(10,20))
+        page_number = str(every_page)
+        to_be_parsed_link = new_link+"&size=200&page="+page_number
+        # buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
+        buddy.get(to_be_parsed_link)
+        All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
+        list_4_IDs = []
+        for each_id in All_IDs:
+            id_value = each_id.get_attribute("content")
+            list_4_IDs.append(id_value)
+        for every_id in list_4_IDs:
+            final_list = every_id.split(",")
+        # Page_wise_PMIDs.append(final_list)
+        # All_PMIDs.pop(19)
+        All_PMIDs.append(final_list)
+        # All2 = []
+        # All2.append(id_value)
+        # All_2 = All_PMIDs.append(id_value)
+    
+    ff = []
+    for j in All_PMIDs:
+        for k in j:
+            ff.append(k)
+    
+    
+    Search_word = [search_term]*len(ff)
+    
+    Search_dataframe = pd.DataFrame()
+    Search_dataframe["Search_term"] = Search_word
+    Search_dataframe["PMIDs"] = ff
+    
+    str(Search_dataframe)
+    if (item in search_term for item in terms[0]):
+        4_name = "Kon"
+    elif (item in search_term for item in terms[1]):
+        4_name = "Koff"
+    elif (item in search_term for item in terms[2]):
+        4_name = "MRT"
+    elif (item in search_term for item in terms[3]):
+        4_name = "TMDD"
+    print(4_name)
+# =============================================================================
+#     trial for iterations for search_term
+# =============================================================================
+    for j in All_search_terms:
+        if (item in search_term for item in terms[0]):
+            k_name = "Kon"
+        elif (item in search_term for item in terms[1]):
+            k_name = "Koff"
+        elif (item in search_term for item in terms[2]):
+            k_name = "MRT"
+        elif (item in search_term for item in terms[3]):
+            k_name = "TMDD"
+        print(k_name)
+terms[0]
+for j in All_search_terms:
+    if ('"Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants"' in terms[0]):
+        k_name = "Kon"
+    if ('"Equilibrium dissociation rate constant" OR "KD" OR "affinity" OR "binding affinity" OR "Koff/Kon"' in terms[1]):
+        k_name = "Koff"
+    if ('"Target residence time" OR "1/Koff" OR "mean residence time" OR "MRT"' in terms[2]):
+        k_name = "KD"
+    if ('"Target Mediated Drug Disposition" OR "Target-Mediated Drug Disposition" OR "target mediated drug disposition" OR "TMDD"' in terms[3]):
+        k_name = "TMDD"
+    print(j)
+    print(k_name)
+# =============================================================================
+#     
+# =============================================================================
+    
+    
+    Search_dataframe.to_excel(dt+"individual_"+"_Search.xlsx")
 
-updated_url = buddy.find_element_by_xpath('//meta[@property="og:url"]')
-new_link = updated_url.get_attribute("content")
+    keyterm.extend(p for p in Search_word)
+    Main_PMID.extend(q for q in ff)
 
-new2 = new_link+"&size=200&page="+str(1)
-
-All_PMIDs = []
-
-for every_page in range(1,iterations):
-    page_number = str(every_page)
-    to_be_parsed_link = new_link+"&size=200&page="+page_number
-    buddy = webdriver.Chrome("C:/BroswerDrivers/chromedriver")
-    buddy.get(to_be_parsed_link)
-    All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
-    list_4_IDs = []
-    for each_id in All_IDs:
-        id_value = each_id.get_attribute("content")
-        list_4_IDs.append(id_value)
-    for every_id in list_4_IDs:
-        final_list = every_id.split(",")
-    All_PMIDs.append(final_list)
+all_search_data = pd.DataFrame()
+all_search_data["keyterm"] = keyterm
+all_search_data["PMID"] = Main_PMID
+all_search_data.to_excel(dt+"DBu_All_keywords_search_PMIDs.xlsx")
+# =============================================================================
+# Creating a unique list of PMIDs
+# =============================================================================
+all_unique_pmids = []
+for every_id in all_search_data["PMID"]:
+    if every_id not in all_unique_pmids:
+        all_unique_pmids.append(every_id)
         
 # =============================================================================
-# To have a glance of the data in the entrez dictionary file
-# =============================================================================
-k = []
-v = []
-for each in lm:
-    k.append(each)
-    v.append(lm[each])
-DF = pd.DataFrame()
-DF["Key"] = k
-DF["value"] = v
-DF.to_excel("output_.xlsx")
-
-# =============================================================================
-# From the IDs collected from scraping each, page data will be fetached using Entrez API    
+# From the IDs collected from scraping each, page data will be fetched using Entrez API    
 # =============================================================================
 
 from Bio import Entrez
 def fetch_details(id_list):
     ids = ','.join(id_list)
     Entrez.email = "divakarbuddha.pharmacy@gmail.com"
+    Entrez.sleep_between_tries = 30
     handle = Entrez.efetch(db="pubmed", retmode = "xml", id = ids)
     results2 = Entrez.read(handle)
     return results2
 
-data1 = fetch_details(final_lst)
+# =============================================================================
+# fetching data for all PMIDs
+# =============================================================================
+
+data1 = fetch_details(all_unique_pmids)
 for record in data1['PubmedArticle']:
     print(record['MedlineCitation']['PMID'])
 
-View(data1)
-data1['MedlineCitation']
-
-
-PubMed_ID = []
-URL = []
-Authors = []
-Affiliations = []
-Language = []
-NLM_ID = []
-Country = []
-Title = []
-Journal = []
-ISSN = []
-Journal_volume = []
-Journal_issue = []
-Journal_Pages = []
-Journal_Publication_Date = []
-Abstract = []
-Page_number = []
-Article_Day = []
-Article_Month = []
-Article_Year = []
-
-
-
-
-for record in data1['PubmedArticle']:
-    try:
-        PMD = record['MedlineCitation']['PMID']
-    except:
-        PMD = ""
-    try:
-        lnk = "https://www.ncbi.nlm.nih.gov/pubmed/"+PMD
-    except:
-        lnk =  "NA"
-    try:
-        Auth_1 = []
-        Aff_1 = []        
-        for every_1 in record['MedlineCitation']['Article']['AuthorList']:
-            try:
-                Aff = every_1['AffiliationInfo'][0]['Affiliation']
-                print(Aff)
-            except:
-                Aff = "NA" 
-            Aff_1.append(Aff)
-            try:
-                Auth_fore = every_1['ForeName']
-                Auth_last = every_1['LastName']
-                Auth_name = Auth_last + " " + Auth_fore
-            except:
-                Auth_name = "NA"
-            Auth_1.append(Auth_name)
+    # =============================================================================
+    # For each PMID record, pubmed data will be categorized
+    # =============================================================================
+    PubMed_ID = []
+    URL = []
+    Authors = []
+    Affiliations = []
+    Language = []
+    NLM_ID = []
+    Country = []
+    Title = []
+    Journal = []
+    ISSN = []
+    Journal_volume = []
+    Journal_issue = []
+    Journal_Pages = []
+    Journal_Publication_Date = []
+    Abstract = []
+    
+    
+    for record in data1['PubmedArticle']:
+        try:
+            PMD = record['MedlineCitation']['PMID']
+        except:
+            PMD = ""
+        try:
+            lnk = "https://www.ncbi.nlm.nih.gov/pubmed/"+PMD
+        except:
+            lnk =  "NA"
+        try:
+            Auth_1 = []
+            Aff_1 = []        
+            for every_1 in record['MedlineCitation']['Article']['AuthorList']:
+                try:
+                    Aff = every_1['AffiliationInfo'][0]['Affiliation']
+                    print(Aff)
+                except:
+                    Aff = "NA" 
+                Aff_1.append(Aff)
+                try:
+                    Auth_fore = every_1['ForeName']
+                    Auth_last = every_1['LastName']
+                    Auth_name = Auth_last + " " + Auth_fore
+                except:
+                    Auth_name = "NA"
+                Auth_1.append(Auth_name)
+            
+            Authors.append(Auth_1)
+            Affiliations.append(Aff_1)
+        except:
+            ""
+        try:
+            Lang = record["MedlineCitation"]["Article"]["Language"]
+        except:
+            Lang = "NA"
+        Language.append(Lang)
+        try:
+            NLM = record["MedlineCitation"]["MedlineJournalInfo"]["NlmUniqueID"]
+        except:
+            NLM = "NA"
+        NLM_ID.append(NLM)        
+        try:
+            cntry = record["MedlineCitation"]["MedlineJournalInfo"]["Country"]
+        except:
+            cntry = "NA"
+        Country.append(cntry)
+        try:
+            jrnl = record["MedlineCitation"]["Article"]["Journal"]["Title"]
+        except:
+            jrnl = "NA"
+        Journal.append(jrnl)
+        try:
+            dt1 = record["MedlineCitation"]["Article"]["Journal"]["ISSN"]
+            issn = dt1.strip(",")
+        except:
+            issn = "NA"
+        ISSN.append(issn)
+        try:
+            vlm = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Volume"]
+        except:
+            vlm = "NA"
+        Journal_volume.append(vlm)
+        try:
+            issu = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Issue"]
+        except:
+            issu = "NA"
+        Journal_issue.append(issu)
+        try:
+            pg = record["MedlineCitation"]["Article"]["Pagination"]["MedlinePgn"]
+        except:
+            pg = "NA"
+        Journal_Pages.append(pg)
+        try:
+            Pub_date = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["PubDate"]
+            yr = Pub_date["Year"]
+            mnth = Pub_date["Month"]
+            day = Pub_date["Day"]
+            Date_published = yr +"-"+mnth+"-"+day
+        except:
+            Date_published = "NA"
+        Journal_Publication_Date.append(Date_published)
+        try:
+            ttl = record["MedlineCitation"]["Article"]["ArticleTitle"]
+        except:
+            ttl = "NA"
+        Title.append(ttl)
+        try:
+            Abs = record["MedlineCitation"]["Article"]["Abstract"]["AbstractText"]
+        except:
+            Abs = "Not Available"
+        Abstract.append(Abs)
         
-        Authors.append(Auth_1)
-        Affiliations.append(Aff_1)
-    except:
-        ""
-    try:
-        Lang = record["MedlineCitation"]["Article"]["Language"]
-    except:
-        Lang = "NA"
-    Language.append(Lang)
-    try:
-        NLM = record["MedlineCitation"]["MedlineJournalInfo"]["NlmUniqueID"]
-    except:
-        NLM = "NA"
-    NLM_ID.append(NLM)        
-    try:
-        cntry = record["MedlineCitation"]["MedlineJournalInfo"]["Country"]
-    except:
-        cntry = "NA"
-    Country.append(cntry)
-    try:
-        jrnl = record["MedlineCitation"]["Article"]["Journal"]["Title"]
-    except:
-        jrnl = "NA"
-    Journal.append(jrnl)
-    try:
-        dt1 = record["MedlineCitation"]["Article"]["Journal"]["ISSN"]
-        issn = dt1.strip(",")
-    except:
-        issn = "NA"
-    ISSN.append(issn)
-    try:
-        vlm = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Volume"]
-    except:
-        vlm = "NA"
-    Journal_volume.append(vlm)
-    try:
-        issu = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Issue"]
-    except:
-        issu = "NA"
-    Journal_issue.append(issu)
-    try:
-        pg = record["MedlineCitation"]["Article"]["Pagination"]["MedlinePgn"]
-    except:
-        pg = "NA"
-    Journal_Pages.append(pg)
-    try:
-        Pub_date = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["PubDate"]
-        yr = Article_Day["Year"]
-        mnth = Article_Day["Month"]
-        day = Article_Day["Day"]
-        Date_published = yr +"-"+mnth+"-"+day
-    except:
-        Date_published = "NA"
-    Journal_Publication_Date.append(Date_published)
-    try:
-        ttl = record["MedlineCitation"]["Article"]["ArticleTitle"]
-    except:
-        ttl = "NA"
-    Title.append(ttl)
-    try:
-        Abs = record["MedlineCitation"]["Article"]["Abstract"]["AbstractText"]
-    except:
-        Abs = "Not Available"
-    Abstract.append(Abs)
-    
-    try:
-        Abs = record["MedlineCitation"]["Article"]
-
-       
-
-    
+        try:
+            Abs = record["MedlineCitation"]["Article"]
 
 
-# Affl = record['MedlineCitation']['Article']['AuthorList'][0]['AffiliationInfo'][0]['Affiliation']
-print(Authors)
-print(Affiliations)
+Final_Pubmed_data = pd.DataFrame()
+Final_Pubmed_data["Published_date"] = Date_published
+Final_Pubmed_data["ISSN"] = ISSN
+Final_Pubmed_data["Journal"] = Journal
+Final_Pubmed_data["Volume"] = Journal_volume
+Final_Pubmed_data["Issue"] = Journal_issue
+Final_Pubmed_data["Pages"] = Journal_Pages
+Final_Pubmed_data["Language"] = Language
+Final_Pubmed_data["Country"] = Country
+Final_Pubmed_data["NLM_ID"] = NLM_ID
+Final_Pubmed_data["Authors"] = Authors
+Final_Pubmed_data["Affiliations"] = Affiliations
+Final_Pubmed_data["link"] = URL
+Final_Pubmed_data["PMID"] = PubMed_ID
+Final_Pubmed_data["Title"] = Title
+Final_Pubmed_data["Abstract"] = Abstract
+# Final_Pubmed_data["NCBI_keywords"] = 
+# Final_Pubmed_data["NCBI_MeSH-terms"] = 
+Final_Pubmed_data["Comments"] = ""
 
-every_1
+
+
+
+writer2 = pd.ExcelWriter(dt+"DBu_Systemic_search_results.xlsx", engine="xlsxwriter")
+all_search_data.to_excel(writer2, Sheet_name = "Kwords_n_PMIDs")
+Final_Pubmed_data.to_excel(writer2, Sheet_name = "PubMed_results")
+writer2.save()
+
+
 # =============================================================================
 # To export abstract based text file
 # =============================================================================
