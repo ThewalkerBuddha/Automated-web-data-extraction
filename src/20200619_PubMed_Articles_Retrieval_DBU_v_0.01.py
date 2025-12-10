@@ -37,6 +37,10 @@ if __name__ == '__main__':
     # time.sleep(0.5)
     id_list = results["IdList"]
     papers = fetch_details(id_list)
+    
+    
+list3 = ["26225261", "28401480", "7924119"]    
+details_final = fetch_details(list3)
     # for each in papers:
     #     print(each)
     # for i, paper in enumerate(papers):
@@ -52,3 +56,4 @@ if __name__ == '__main__':
     
     
     # reference: https://marcobonzanini.com/2015/01/12/searching-pubmed-with-python/
+    #reference 
