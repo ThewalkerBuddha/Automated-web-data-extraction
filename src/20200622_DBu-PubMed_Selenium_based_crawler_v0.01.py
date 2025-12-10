@@ -120,17 +120,38 @@ for each_n_every in val23:
     elem = each_n_every.get_attribute("content")
     list90.append(elem)
 
-values.text()
+# values.text()
 
-for every in values:
-    print(every.text)
+for each_item in list90:
+    final_lst = each_item.split(",")
 
-get_attribute("value")
-for each in values:
-    print(str(each))
+final2 = []
+for each2 in final_lst:
+    final2.append(int(each2))
 
+def search(query):
+    Entrez.email = "divakarbuddha.pharmacy@gmail.com"
+    handle = Entrez.esearch(db="pubmed", sort="relevance", retmax = "30000", retmode = "xml", term = query, idtype = "acc")
+    results = Entrez.read(handle)
+    return results
 
+  vals12 = search('Agomelatine AND [("Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants")]')  
+len(vals12['IdList'])
+    
+    
+    
 
+from Bio import Entrez
+def fetch_details(id_list):
+    ids = ','.join(id_list)
+    Entrez.email = "divakarbuddha.pharmacy@gmail.com"
+    handle = Entrez.efetch(db="pubmed", retmode = "xml", id = ids)
+    results2 = Entrez.read(handle)
+    return results2
+
+data1 = fetch_details(final_lst)
+for record in data1['PubmedArticle']:
+    print(record['MedlineCitation']['PMID'])
 
 
 
@@ -153,4 +174,4 @@ for each in values:
 # =============================================================================
 # Driver path
 # =============================================================================
-selenium driver location "C:/BrowserDrivers/chromedriver"
+# selenium driver location "C:/BrowserDrivers/chromedriver"
