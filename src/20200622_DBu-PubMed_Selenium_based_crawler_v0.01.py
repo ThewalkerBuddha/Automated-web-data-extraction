@@ -38,6 +38,7 @@ import re
 import progressbar as Status
 from progressbar import AnimatedMarker
 from progressbar import Timer
+import math
 # =============================================================================
 # Selenium Driver settings for smooth crawling
 # =============================================================================
@@ -89,6 +90,10 @@ My_options.add_experimental_option('excludeSwitches', ['enable-logging'])#disabl
 #         return True
 #     return None_of_conditions
 
+# =============================================================================
+# Loading keywords to be entered into the pubmed search tab
+# =============================================================================
+
 buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
 buddy.get("https://pubmed.ncbi.nlm.nih.gov/")
 
@@ -117,69 +122,37 @@ iterations
 updated_url = buddy.find_element_by_xpath('//meta[@property="og:url"]')
 new_link = updated_url.get_attribute("content")
 
-to_be_parsed_link = new_link+"&size=200&page="+page_number
+new2 = new_link+"&size=200&page="+str(1)
 
+All_PMIDs = []
 
-
-# def remove_result_stat_chars(string):
-#     split_string = string.split()
-#     if (split_string[0]=="About"):
-#         value = (split_string[1]).replace(",","")
-#     else:
-#         value = (split_string[0].replace(",",""))
-#     return int(value)
-# def Unique_dictionary_from_two_dictionaries (Dictionary1, Dictionary2):
-#     for key in Dictionary1:
-#         if key not in Dictionary2:
-#             value = {key:Dictionary1[key]}
-#             Dictionary2.update(value)
-#     return Dictionary2
+for every_page in range(1,iterations):
+    page_number = str(every_page)
+    to_be_parsed_link = new_link+"&size=200&page="+page_number
+    buddy = webdriver.Chrome("C:/BroswerDrivers/chromedriver")
+    buddy.get(to_be_parsed_link)
+    All_IDs = buddy.find_elements_by_xpath('/html/head/meta[27]')
+    list_4_IDs = []
+    for each_id in All_IDs:
+        id_value = each_id.get_attribute("content")
+        list_4_IDs.append(id_value)
+    for every_id in list_4_IDs:
+        final_list = every_id.split(",")
+    All_PMIDs.append(final_list)
+        
 # =============================================================================
-# Loading keywords to be entered into the pubmed search tab
+# To have a glance of the data in the entrez dictionary file
 # =============================================================================
-# Give the path to the excel containingt he keywords list
-buddy = webdriver.Chrome("C:/BrowserDrivers/chromedriver")
-buddy.get("https://pubmed.ncbi.nlm.nih.gov/?term=chronic+pain&size=200")
-# buddy.close
-# =============================================================================
-# To export abstract based text file
-# =============================================================================
+k = []
+v = []
+for each in lm:
+    k.append(each)
+    v.append(lm[each])
+DF = pd.DataFrame()
+DF["Key"] = k
+DF["value"] = v
+DF.to_excel("output_.xlsx")
 
-option1 = buddy.find_element_by_id("save-results-panel-trigger").click()
-option_select = buddy.find_element_by_xpath('//*[@id="save-action-format"]/option[4]').click()
-option_final_select = buddy.find_element_by_xpath('//*[@id="save-action-panel-form"]/div[3]/button[1]').click()  # give the final output of abstracts of articles in each page
-values = buddy.find_elements_by_xpath('//*[@id="save-action-panel-form"]/div[1]/input[1]')
-# =============================================================================
-# 
-# =============================================================================
-val23 = buddy.find_elements_by_xpath('/html/head/meta[27]')
-list90 = []
-for each_n_every in val23:
-    elem = each_n_every.get_attribute("content")
-    list90.append(elem)
-
-# values.text()
-
-for each_item in list90:
-    final_lst = each_item.split(",")
-
-# final2 = []
-# for each2 in final_lst:
-#     final2.append(int(each2))
-# =============================================================================
-# API based search is giving less results than scraping hence making the entrez based search obsolete
-# =============================================================================
-
-# def search(query):
-#     Entrez.email = "divakarbuddha.pharmacy@gmail.com"
-#     handle = Entrez.esearch(db="pubmed", sort="relevance", retmax = "30000", retmode = "xml", term = query, idtype = "acc")
-#     results = Entrez.read(handle)
-#     return results
-
-#   vals12 = search('Agomelatine AND [("Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants")]')  
-# len(vals12['IdList'])
-    
-    
 # =============================================================================
 # From the IDs collected from scraping each, page data will be fetached using Entrez API    
 # =============================================================================
@@ -202,20 +175,26 @@ data1['MedlineCitation']
 
 PubMed_ID = []
 URL = []
-Affiliation = []
+Authors = []
+Affiliations = []
 Language = []
 NLM_ID = []
 Country = []
 Title = []
 Journal = []
-Journal_ISSN = []
+ISSN = []
+Journal_volume = []
+Journal_issue = []
+Journal_Pages = []
+Journal_Publication_Date = []
 Abstract = []
 Page_number = []
 Article_Day = []
 Article_Month = []
 Article_Year = []
-Journal_volume = []
-Journal_issue = []
+
+
+
 
 for record in data1['PubmedArticle']:
     try:
@@ -227,7 +206,126 @@ for record in data1['PubmedArticle']:
     except:
         lnk =  "NA"
     try:
-        Affl = record["MedlineCitation"]["AffiliationInfo"]
+        Auth_1 = []
+        Aff_1 = []        
+        for every_1 in record['MedlineCitation']['Article']['AuthorList']:
+            try:
+                Aff = every_1['AffiliationInfo'][0]['Affiliation']
+                print(Aff)
+            except:
+                Aff = "NA" 
+            Aff_1.append(Aff)
+            try:
+                Auth_fore = every_1['ForeName']
+                Auth_last = every_1['LastName']
+                Auth_name = Auth_last + " " + Auth_fore
+            except:
+                Auth_name = "NA"
+            Auth_1.append(Auth_name)
+        
+        Authors.append(Auth_1)
+        Affiliations.append(Aff_1)
+    except:
+        ""
+    try:
+        Lang = record["MedlineCitation"]["Article"]["Language"]
+    except:
+        Lang = "NA"
+    Language.append(Lang)
+    try:
+        NLM = record["MedlineCitation"]["MedlineJournalInfo"]["NlmUniqueID"]
+    except:
+        NLM = "NA"
+    NLM_ID.append(NLM)        
+    try:
+        cntry = record["MedlineCitation"]["MedlineJournalInfo"]["Country"]
+    except:
+        cntry = "NA"
+    Country.append(cntry)
+    try:
+        jrnl = record["MedlineCitation"]["Article"]["Journal"]["Title"]
+    except:
+        jrnl = "NA"
+    Journal.append(jrnl)
+    try:
+        dt1 = record["MedlineCitation"]["Article"]["Journal"]["ISSN"]
+        issn = dt1.strip(",")
+    except:
+        issn = "NA"
+    ISSN.append(issn)
+    try:
+        vlm = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Volume"]
+    except:
+        vlm = "NA"
+    Journal_volume.append(vlm)
+    try:
+        issu = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["Issue"]
+    except:
+        issu = "NA"
+    Journal_issue.append(issu)
+    try:
+        pg = record["MedlineCitation"]["Article"]["Pagination"]["MedlinePgn"]
+    except:
+        pg = "NA"
+    Journal_Pages.append(pg)
+    try:
+        Pub_date = record["MedlineCitation"]["Article"]["Journal"]["JournalIssue"]["PubDate"]
+        yr = Article_Day["Year"]
+        mnth = Article_Day["Month"]
+        day = Article_Day["Day"]
+        Date_published = yr +"-"+mnth+"-"+day
+    except:
+        Date_published = "NA"
+    Journal_Publication_Date.append(Date_published)
+    try:
+        ttl = record["MedlineCitation"]["Article"]["ArticleTitle"]
+    except:
+        ttl = "NA"
+    Title.append(ttl)
+    try:
+        Abs = record["MedlineCitation"]["Article"]["Abstract"]["AbstractText"]
+    except:
+        Abs = "Not Available"
+    Abstract.append(Abs)
+    
+    try:
+        Abs = record["MedlineCitation"]["Article"]
+
+       
+
+    
+
+
+# Affl = record['MedlineCitation']['Article']['AuthorList'][0]['AffiliationInfo'][0]['Affiliation']
+print(Authors)
+print(Affiliations)
+
+every_1
+# =============================================================================
+# To export abstract based text file
+# =============================================================================
+
+# option1 = buddy.find_element_by_id("save-results-panel-trigger").click()
+# option_select = buddy.find_element_by_xpath('//*[@id="save-action-format"]/option[4]').click()
+# option_final_select = buddy.find_element_by_xpath('//*[@id="save-action-panel-form"]/div[3]/button[1]').click()  # give the final output of abstracts of articles in each page
+# values = buddy.find_elements_by_xpath('//*[@id="save-action-panel-form"]/div[1]/input[1]')
+# =============================================================================
+
+# =============================================================================
+# API based search is giving less results than scraping hence making the entrez based search obsolete
+# =============================================================================
+
+# def search(query):
+#     Entrez.email = "divakarbuddha.pharmacy@gmail.com"
+#     handle = Entrez.esearch(db="pubmed", sort="relevance", retmax = "30000", retmode = "xml", term = query, idtype = "acc")
+#     results = Entrez.read(handle)
+#     return results
+
+#   vals12 = search('Agomelatine AND [("Association rate constant" OR "Kon") OR ("binding kinetics" OR "binding association rate constant" OR "binding rate constant" OR "binding rate constants")]')  
+# len(vals12['IdList'])
+    
+    
+
 
 
 for record in data1['PubmedArticle']:
@@ -237,8 +335,9 @@ for record in data1['PubmedArticle']:
 
 
 
-
-
+# =============================================================================
+# 
+# =============================================================================
 
 
 
