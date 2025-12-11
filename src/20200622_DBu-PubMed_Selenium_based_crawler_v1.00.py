@@ -2,7 +2,7 @@
 """
 Created on Mon Jun 22 14:58:55 2020
 
-@author: divak
+@author: Divakar Buddha
 """
 # =============================================================================
 # Crawler to access the abstracts for multiple keyword search results; since
